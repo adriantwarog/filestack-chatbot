@@ -1,0 +1,151 @@
+<!-- create default html starter kit -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta http-equiv="X-UA-Compatible" content="ie=edge">
+	<title>Filestack ChatBot</title>
+</head>
+<body>
+	<style>
+		/* enable box model css */
+		*, *::before, *::after {
+			box-sizing: border-box;
+		}
+		body {
+			background:#333;
+			background-image:url(./bg.png);
+			background-size:100% ;
+			background-repeat: no-repeat;
+			min-height:100vh;
+			/* STRECH the background to fill the size of the div */
+			background-size: cover;
+			/* make the font look clean  */
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
+			/* pick a font that looks crisp */
+			font-family: sans-serif;
+			
+		}
+		.chatbot {
+			width: 480px;
+			height: 640px;;
+			background: #fff;
+			border-radius: 15px;
+			box-shadow: 0 0 15px rgba(0,0,0,0.5);
+			position: absolute;
+			bottom:30px;
+			right:30px;
+			display:flex;
+			flex-direction: column;
+			padding:15px;
+		}
+		.chatbot-body {
+			flex:1;
+			position:relative;
+		}
+		input {
+			width:100%;
+			border:0;
+			outline:0;
+			padding:10px;
+			font-size: 16px;
+			border-radius: 5px;
+			box-shadow: 0 0 5px rgba(0,0,0,0.5);
+		}
+		.chatbot-body-message {
+			position:absolute;
+			overflow-y: scroll;
+			top:0;bottom:0;left:0;right:0;
+		}
+		.chatbot-body-message-text {
+			margin-bottom:15px;
+			padding:1px 15px;
+			border-radius: 15px;
+			background:#eee;
+		}
+		.chatbot-body-message-text.me {
+			background:#ef4925;
+			color:white;
+		}
+	</style>
+	<div class="chatbot">
+		<div class="chatbot-header">
+			<div class="chatbot-header-title">
+				<h1>Welcome to Filestack</h1>
+			</div>
+		</div>
+		<div class="chatbot-body">
+			<div id="chatbot-body-message" class="chatbot-body-message">
+				<div class="chatbot-body-message-text gpt">
+					<p>Hi, I'm the Filestack Chatbot, how can I help you today?</p>
+				</div>
+			</div>
+		</div>
+		<div class="chatbot-footer">
+			<div class="chatbot-footer-input">
+				<input type="text" placeholder="Type a message...">
+			</div>
+		</div>
+	</div>
+	
+	<script>
+		let chatLog = [{
+			user: "gpt",
+    		message: "Hi, I'm the Filestack Chatbot, how can I help you today?"
+		}]
+		// listen for users hitting the enter button when using the input and call a fucntion called requestChatbot to send the message to the server
+		document.querySelector('input').addEventListener('keyup', function(e) {
+			if (e.keyCode === 13) {
+				requestChatbot();
+			}
+		});
+		// save the value of the text input and then clear it, use the value to call the api server on localhost port 3080/api/chatbot and use the response to create a new div and append it to the chatbot-body-message div
+		function requestChatbot(){
+			let input = document.querySelector('input');
+			let chatLogNew = [...chatLog, { user: "me", message: `${input.value}`} ]
+			input.value = '';
+			const messages = chatLogNew.map((message) => message.message).join("\n")
+			setChatLog([...chatLogNew ])
+			setTimeout(() => {
+				setChatLog([...chatLogNew, { user: "gpt", message: `typing...`} ])
+			}, 1000)
+			console.log(messages)
+			fetch('http://localhost:3080/api', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					message: messages,
+				})
+			})
+			.then(res => res.json())
+			.then(data => {
+				console.log(data)
+				setChatLog([...chatLogNew, { user: "gpt", message: `${data.message}`} ])
+			});
+		
+		}
+		function setChatLog(newChatlog){
+			chatLog = newChatlog;
+			// loop through chatlog array and print out each message in a new div  under the chatbot-body-message div depending on if the user is gpt or me
+			// clear the div first
+			document.querySelector('#chatbot-body-message').innerHTML = '';
+			chatLog.forEach((message) => {
+				let div = document.createElement('div');
+				div.classList.add('chatbot-body-message-text');
+				if(message.user === 'gpt'){
+					div.classList.add('gpt');
+				} else {
+					div.classList.add('me');
+				}
+				div.innerHTML = `<p>${message.message}</p>`;
+				document.querySelector('#chatbot-body-message').appendChild(div);
+			})
+		}
+	</script>
+</body>
+</html>
